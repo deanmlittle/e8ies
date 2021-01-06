@@ -1,0 +1,72 @@
+
+/**
+ * e8ies
+ * ============
+ *
+ * Mine 21e8, or don't, whatever.
+ */
+'use strict'
+
+import { KeyPair, PrivKey, PubKey, Bn, Ecies, Aescbc, Hash } from 'bsv'
+
+class e8ies {}
+e8ies.encrypt = (messageBuf, difficulty = 218, fromKey = null) => {
+  if (!Buffer.isBuffer(messageBuf)) {
+      throw new Error('messageBuf must be a buffer')
+  }
+  let minedKeyPair;
+  if(fromKey) {
+    minedKeyPair = KeyPair.fromPrivKey(PrivKey.fromString(fromKey))
+  } else {
+    minedKeyPair = KeyPair.fromRandom()
+  }
+  const Rbuf = minedKeyPair.pubKey.toDer(true)    
+  let hash = Buffer.from(Rbuf, 'hex')
+  console.log(hash);
+  for(let i=0; i<difficulty; i++) {
+      hash = Hash.sha256(hash);
+  }
+  const magicKeyPair = KeyPair.fromPrivKey(new PrivKey(Bn.fromBuffer(hash)));
+  const { iv, kE, kM } = Ecies.ivkEkM(minedKeyPair.privKey, magicKeyPair.pubKey)
+  const ciphertext = Aescbc.encrypt(messageBuf, kE, iv, false)
+  const magic = hash.slice(0,4);
+  const encBuf = Buffer.concat([magic, Rbuf, ciphertext])
+  const hmac = Hash.sha256Hmac(encBuf, kM)
+  return Buffer.concat([encBuf, hmac])
+}
+  
+e8ies.mine = (encBuf) => {
+  if (!Buffer.isBuffer(encBuf)) {
+    throw new Error('encBuf must be a buffer')
+  }
+  const magic = encBuf.slice(0, 4)
+  let message = false;
+  let magicSeed = encBuf.slice(4, 37)
+  const minedPubKey = PubKey.fromDer(magicSeed)
+  while (!message) {
+    magicSeed = Hash.sha256(magicSeed)
+    if(magic.equals(magicSeed.slice(0,4))){
+      const magicKey = new PrivKey(Bn.fromBuffer(magicSeed))
+      message = e8ies.decrypt(encBuf, magicKey, minedPubKey)
+    }
+  }
+  return message;
+}
+
+e8ies.decrypt = (encBuf, magicKey, minedPubKey) => {
+  if (!Buffer.isBuffer(encBuf)) {
+    throw new Error('encBuf must be a buffer')
+  }
+  const tagLength = 32
+  let offset = 37
+  const { iv, kE, kM } = Ecies.ivkEkM(magicKey, minedPubKey)
+  const ciphertext = encBuf.slice(offset, encBuf.length - tagLength)
+  const hmac = encBuf.slice(encBuf.length - tagLength, encBuf.length)
+  const hmac2 = Hash.sha256Hmac(encBuf.slice(0, encBuf.length - tagLength), kM)
+  if (!hmac.equals(hmac2)) {
+    return false;
+  }
+  return Aescbc.decrypt(ciphertext, kE, iv)
+}
+
+export { e8ies }

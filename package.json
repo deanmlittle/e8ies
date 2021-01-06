@@ -1,0 +1,39 @@
+{
+  "name": "e8ies",
+  "version": "1.0.1",
+  "description": "A 21e8 ECIES library",
+  "repository": "https://github.com/deanmlittle/e8ies",
+  "main": "lib/e8ies.cjs.js",
+  "module": "src/index.js",
+  "unpkg": "lib/e8ies.min.js",
+  "scripts": {
+    "build": "rm -rf lib/* && rollup -c rollup.config.js",
+    "test": "mocha \"test/e8ies.test.js\" --require esm"
+  },
+  "author": "Dean Little",
+  "license": "ISC",
+  "peerDependencies": {
+    "bsv": "^2.0.4"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.10",
+    "@babel/preset-env": "^7.10",
+    "@rollup/plugin-babel": "^5.0",
+    "@rollup/plugin-commonjs": "^13.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^8.0",
+    "bsv": "^2.0.0-beta.42",
+    "chai": "^4.2",
+    "esm": "^3.2",
+    "mocha": "^8.0",
+    "rollup": "^2.16",
+    "rollup-plugin-banner": "^0.2",
+    "rollup-plugin-node-polyfills": "^0.2",
+    "rollup-plugin-terser": "^6.1"
+  },
+  "keywords": [
+    "21e8",
+    "BSV",
+    "Bitcoin"
+  ]
+}
